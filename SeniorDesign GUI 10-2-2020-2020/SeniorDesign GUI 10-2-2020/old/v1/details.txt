@@ -1,3 +1,0 @@
-- Camera stream only
-- Code taken from Raspberry Pi documentation
-- Socket server, no web framework used
