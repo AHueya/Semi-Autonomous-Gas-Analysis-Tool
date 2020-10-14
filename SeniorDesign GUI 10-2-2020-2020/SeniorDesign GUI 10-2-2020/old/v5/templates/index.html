@@ -1,0 +1,109 @@
+<html>
+    <head>
+        <title>Semi-Autonomous Robotic Assist Tool</title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+        
+        <!---------------------------START Internal CSS------------------------------>
+        <style>
+            th {
+                text-align: right;
+            }
+            td {
+                padding: 5px;
+                padding-right: 20px;
+                text-align: left;
+                }
+        </style>
+        <!---------------------------END Internal CSS-------------------------------->
+    </head>
+    <body>
+        <h1>Semi-Autonomous Robotic Assist Tool Web GUI</h1>
+        
+        <!--Camera Feed-->
+        <img src="{{ url_for('video_feed') }}"> 
+        <hr>
+        
+        
+        <!-----START Camera Settings------------------------------------------------->
+        <form action="/update" method="POST">
+            <label for="res">Resolution:</label>
+            <select id="res" name="res">
+                <option value="" selected disabled hidden>Choose here</option>
+                <option value='240x160'>240x160</option>
+                <option value='320x240'>320x240</option>
+                <option value='400x240'>400x240</option>
+                <option value='480x320'>480x320</option>
+                <option value='640x480'>640x480</option>
+            </select>
+            <label for="fps">&emsp;Frame Rate:</label>
+            <input type="number" id="fps" name="fps"  placeholder="default 24"><br><br>
+            <input type="submit" value="submit">
+        </form><br>
+        <!-----END Camera Settings--------------------------------------------------->
+        
+        
+        <!-----START Data Rate Settings---------------------------------------------->
+        <label for="ups">Update rate:</label>
+        <input type="number" id="ups" name="ups"><br><br>
+        <button onclick="DoSubmit()">Submit</button>
+        <!-----END Data Rate Settings------------------------------------------------>
+        
+        
+        <!-----START Display Sensor Values------------------------------------------->
+        <h2>GPIO Test Values</h2>
+        <table>
+            <tr>
+                <th>Temperature = </td>
+                <td><span id="gpio1">{{ gpioTest1 }}</span></td>
+                
+                <th>Humidity = </td>
+                <td><span id="gpio2">{{ gpioTest2 }}</span></td>
+            </tr>
+            <tr>
+                <th>Carbon Dioxide = </td>
+                <td><span id="gpio3">{{ gpioTest3 }}</span></td>
+                
+                <th>Carbon Monoxide = </td>
+                <td><span id="placeholder3">placeholdertext003{{ placeholder3 }}</span></td>
+            </tr>
+            <tr>
+                <th>Hydrocarbon = </td>
+                <td><span id="placeholder4">placeholdertext004{{ placeholder4 }}</span></td>
+            </tr>
+        </table>
+        <!---------------------------END Display Sensor Values----------------------->
+    </body>
+</html>
+
+<!--START Request update from RPi server-->
+<script>
+    var update_time = 3;
+    
+    function DoSubmit(){
+        clearTimeout();
+        update_time = document.getElementById("ups").value;
+        loop();
+    }
+    
+    //No data is requested on startup. Some value must be inputted to begin the request loop
+    //On update rate change, Previous recursion doesn't termniate, refreshing resolves issue
+    function loop() {
+        setTimeout(function(){
+            $.ajax({
+                url: '/update',
+                type: 'GET',
+                success: function(response) {
+                    console.log(response);
+                    $("#gpio1").html(response["gpioTestStatus1"]);
+                    $("#gpio2").html(response["gpioTestStatus2"]);
+                    $("#gpio3").html(response["gpioTestStatus3"]);
+                },
+                error: function(error) {
+                    console.log(error);
+                }
+            })
+            loop();
+        }, update_time*1000); //Calculated in milliseconds
+    }
+</script>
+<!--END Request update from RPi server---->

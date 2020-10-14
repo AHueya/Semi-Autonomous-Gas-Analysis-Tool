@@ -1,0 +1,2 @@
+- Pi Camera stream only
+- Using FLASK web framework

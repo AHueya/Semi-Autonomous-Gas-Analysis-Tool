@@ -1,0 +1,2 @@
+-FLASK based web server
+-Camera and a single GPIO transferred to GUI.

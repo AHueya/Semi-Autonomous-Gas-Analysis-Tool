@@ -1,0 +1,2 @@
+- camera and data transfer control conducted via HTTP POST request
+- data transfer conducted through HTTP GET requests

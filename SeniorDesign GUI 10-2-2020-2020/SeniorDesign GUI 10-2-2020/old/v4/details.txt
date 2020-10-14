@@ -1,0 +1,2 @@
+- no camera or data transfer control
+- data transfer conducted through HTTP GET requests
