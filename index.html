@@ -1,0 +1,136 @@
+<html>
+    <head>
+        <title>Semi-Autonomous Robotic Assist Tool</title>
+        <script src="//code.jquery.com/jquery-3.3.1.min.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+        <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
+        
+        <!---------------------------START Internal CSS------------------------------>
+        <style>
+            *{
+                font-family: sans-serif;
+            }
+            td {
+                padding: 12px;
+                text-align: left;
+                border: 1px solid white;
+                border-radius: 7px;
+                background: #c2c4c3;
+                width: 200px;
+                vertical-align: top;
+                }
+            .value {
+                font-size: 1.25em;
+            }
+            .dot {
+                height: 1.125em;
+                width: 1.125em;
+                border-radius: 50%;
+                background: #ffffff;
+                float: right;
+            }
+            .units{
+                padding-left: 5px;
+                color: 656565;
+                font-size: 0.75em;
+            }
+        </style>
+        <!---------------------------END Internal CSS-------------------------------->
+    </head>
+    <body>
+        <h1>Semi-Autonomous Gas Analysis Tool Web GUI</h1>
+        
+        <!--Camera Feed-->
+        <img src="{{ url_for('video_feed') }}"> 
+        <hr>
+        
+        
+        <!-----START Camera Settings------------------------------------------------->
+        <form action="/update" method="POST">
+            <label for="res">Resolution:</label>
+            <select id="res" name="res">
+                <option value="" selected disabled hidden>Choose here</option>
+                <option value='240x160'>240x160</option>
+                <option value='320x240'>320x240</option>
+                <option value='400x240'>400x240</option>
+                <option value='480x320'>480x320</option>
+                <option value='640x480'>640x480</option>
+            </select>
+            <label for="fps">&emsp;Frame Rate:</label>
+            <input type="number" id="fps" name="fps"  placeholder="default 24"><br><br>
+            <input type="submit" value="submit">
+        </form><br>
+        <!-----END Camera Settings--------------------------------------------------->
+        
+        
+        <!-----START Display Sensor Values------------------------------------------->
+        <h2>Sensor Values</h2>
+        <table>
+            <tr>
+                <td>
+                    <span>Temperature</span><span class="units">°F</span>
+                    <p id="temperature" class="value">Uninitialized</p>
+                </td>
+                <td>
+                    <span>Humidity</span><span class="units">%</span>
+                    <p id="humidity" class="value">Uninitialized</p>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <span>Oxygen</span><span class="units">%</span><span class="dot" id="oxygen_stat"></span>
+                    <p id="oxygen" class="value">Uninitialized</p>
+                </td>
+                <td>
+                    <span>Carbon Dioxide</span><span class="units">ppm</span><span class="dot" id="carbonDioxide_stat"></span>
+                    <p id="carbonDioxide" class="value">Uninitialized</p>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <span>Carbon Monoxide</span><span class="units">ppm</span><span class="dot" id="carbonMonoxide_stat"></span>
+                    <p id="carbonMonoxide" class="value">Uninitialized</p>
+                </td>
+                <td>
+                    <span>LP Gas</span><span class="units">ppm</span><span class="dot" id="lpg_stat"></span>
+                    <p id="lpg" class="value">Uninitialized</p>
+                </td>
+            </tr>
+        </table>
+        <!---------------------------END Display Sensor Values----------------------->
+    </body>
+</html>
+
+<!--START Data capture from Raspberry Pi-->
+<script>
+    var socket = io.connect('http://' + document.domain + ':' + location.port + '/test');
+
+    function checkStatus(gasValue, good, moderate){
+        if(gasValue < good)
+            return "green";
+        else if (gasValue < moderate)
+            return "orange";
+        else
+            return "red";
+    }
+    
+    socket.on('newdata', function(msg) {
+        document.getElementById("temperature").innerHTML = msg.temp;
+        
+        document.getElementById("humidity").innerHTML = msg.humi;
+
+        document.getElementById("oxygen").innerHTML = msg.oxyg;
+        $('#oxygen_stat').css('background-color',checkStatus(msg.oxyg, 200, 500));
+        
+        document.getElementById("carbonDioxide").innerHTML = msg.cadi;
+        $('#carbonDioxide_stat').css('background-color',checkStatus(msg.cadi, 200, 500));
+        
+        document.getElementById("carbonMonoxide").innerHTML = msg.camo;
+        $('#carbonMonoxide_stat').css('background-color',checkStatus(msg.camo, 200, 500));
+        
+        document.getElementById("lpg").innerHTML = msg.lpg;
+        $('#lpg_stat').css('background-color',checkStatus(msg.lpg, 200, 500));
+    });
+</script>
+<!--END Data capture from Raspberry Pi---->
+
