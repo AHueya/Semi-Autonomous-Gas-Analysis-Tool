@@ -105,6 +105,7 @@
 <script>
     var socket = io.connect('http://' + document.domain + ':' + location.port + '/test');
 
+    // Color indicator function
     function checkStatus(gasValue, good, moderate){
         if(gasValue < good)
             return "green";
@@ -114,22 +115,37 @@
             return "red";
     }
     
+    // Reverse color indicator function
+    function reverseCheckStatus(gasValue, thresh1, thresh2){
+        if(gasValue < thresh2)
+            return "red";
+        else if (gasValue < thresh1)
+            return "orange";
+        else
+            return "green";
+    }
+    
     socket.on('newdata', function(msg) {
         document.getElementById("temperature").innerHTML = msg.temp;
         
         document.getElementById("humidity").innerHTML = msg.humi;
 
+        // +20.8% Oxygen = Enriched, < 19.5% Oxygen = Deficient
         document.getElementById("oxygen").innerHTML = msg.oxyg;
-        $('#oxygen_stat').css('background-color',checkStatus(msg.oxyg, 200, 500));
+        $('#oxygen_stat').css('background-color',reverseCheckStatus(msg.oxyg, 20.8, 19.5));
         
+        // < 1,000 ppm Outside/occupied spaces, 1,000 - 2,000 ppm drowsiness/poor air,
+        // +2,000 ppm potential death
         document.getElementById("carbonDioxide").innerHTML = msg.cadi;
-        $('#carbonDioxide_stat').css('background-color',checkStatus(msg.cadi, 200, 500));
+        $('#carbonDioxide_stat').css('background-color',checkStatus(msg.cadi, 1000, 2000));
         
+        // 50 ppm OSHA 8 hour maximum exposure, +200 OSHA evacuation reccomendation
         document.getElementById("carbonMonoxide").innerHTML = msg.camo;
-        $('#carbonMonoxide_stat').css('background-color',checkStatus(msg.camo, 200, 500));
+        $('#carbonMonoxide_stat').css('background-color',checkStatus(msg.camo, 50, 200));
         
+        // 1,000 ppm OSHA Permissible Exposure Limits, 2,100 ppm lower explosive limit
         document.getElementById("lpg").innerHTML = msg.lpg;
-        $('#lpg_stat').css('background-color',checkStatus(msg.lpg, 200, 500));
+        $('#lpg_stat').css('background-color',checkStatus(msg.lpg, 1000, 2100));
     });
 </script>
 <!--END Data capture from Raspberry Pi---->
