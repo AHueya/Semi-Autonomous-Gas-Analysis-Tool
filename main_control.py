@@ -12,8 +12,6 @@ in3 = 17
 in4 = 27
 en2 = 22
 
-temp1 = 1
-
 GPIO.setwarnings(False)
 
 GPIO.setmode(GPIO.BCM)
