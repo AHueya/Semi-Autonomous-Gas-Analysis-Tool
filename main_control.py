@@ -43,7 +43,7 @@ p.start(25)
 m.start(25)
 
 win = pygame.display.set_mode((200, 200))
-pygame.display.set_caption("Motor Controls")
+pygame.display.set_caption("Main Controls")
 pygame.key.set_repeat(100, 100)
 
 run = True 
