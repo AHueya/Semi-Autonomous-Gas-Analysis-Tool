@@ -16,12 +16,46 @@ from flask import Flask, jsonify, render_template, Response, request
 from flask_socketio import SocketIO, emit
 import io
 import time
-import serial
+import serial 
 import csv
 from threading import Thread, Event
 import picamera
 from base_camera import BaseCamera
+from decimal import *
+from subprocess import call
 
+def find(str, ch):
+        for i, ltr in enumerate(str):
+            if ltr == ch:
+                yield i
+
+port = serial.Serial('/dev/ttyUSB1', baudrate = 115200, timeout = 1)
+
+port.write('AT'+'\r\n')
+rcv = port.read(100)
+#print rcv
+time.sleep(.1)
+
+port.write('AT+CGNSPWR=1'+'\r\n')       #to power the GPS
+rcv = port.read(100)
+#print rcv
+time.sleep(.1)
+
+port.write('AT+CGNSIPR=115200'+'\r\n')  #set the baud rate of GPS
+rcv = port.read(100)
+#print rcv
+time.sleep(.1)
+
+port.write('AT+CGNSTST=1'+'\r\n')       #send data received to UART
+rcv = port.read(100)
+#print rcv
+time.sleep(.1)
+
+port.write('AT+CGNSINF'+'\r\n')         #print the GPS information
+rcv = port.read(200)
+#print rcv
+time.sleep(.1)
+        
 app = Flask(__name__)
 
 # turn the flask app into a socketio app
@@ -32,7 +66,7 @@ thread = Thread()
 thread_stop_event = Event()
 
 # Define serial port
-serial = serial.Serial('/dev/ttyUSB0', 9600)
+serialard = serial.Serial('/dev/ttyUSB0', 9600)
 
 # Default Resolution and frame rate
 var_resolution = '480x320'
@@ -75,7 +109,7 @@ with open('data.csv','wb') as csvfile:
                             quotechar='|', quoting=csv.QUOTE_MINIMAL)
     
     # CSV file row 1
-    filewriter.writerow(['Temperature', 'Humidity', 'Oxygen', 'Carbon Dioxide',
+    filewriter.writerow(['Latitude', 'Longitude', 'Temperature', 'Humidity', 'Oxygen', 'Carbon Dioxide',
                          'Carbon Monoxide', 'Liquefied Petroleum Gas'])
 
 ##### START Camera Update Function #################################
@@ -100,19 +134,48 @@ def update():
 ##### START Data Update Function ###################################
 def UpdateData(): 
     while not thread_stop_event.isSet():
-        line = serial.readline()
+        fd = port.read(200)     #read the GPS data from UART
+        #print fd
+        time.sleep(.5)
+        if '$GNRMC' in fd:      #to extract lattitude and longitude
+                ps=fd.find('$GNRMC')
+                dif = len(fd)-ps
+                if dif > 50:
+                        data = fd[ps:(ps+50)]
+                        #print data
+                        ds = data.find('A')     #check GPS is valid
+                        if ds > 0 and ds < 20:
+                                p=list(find(data, ","))
+                                lati=data[(p[2]+1):p[3]]
+                                longi=data[(p[4]+1):p[5]]
+#GPS data calculation
+                                lat=lati[2:len(lati)]
+                                lat = Decimal(lat)
+                                lat = lat/60
+                                s11=int(lati[0:2])
+                                lat = s11+lat
+
+                                long = longi[3:len(longi)]
+                                long = Decimal(long)
+                                long = long/60
+                                s22 = int(longi[0:3])
+                                long = s22+long
+                                
+        line = serialard.readline()
+       # linegps = port.readline()
+       # lat, long = linegps.split()
         temp, humi, oxyg, cadi, camo, lpg = line.split()
         
         #Write data to CSV file
         with open('data.csv', 'a') as csvfile:
             filewriter = csv.writer(csvfile, delimiter=',', lineterminator='\n')
-            filewriter.writerow([temp, humi, oxyg, cadi, camo, lpg])
+            filewriter.writerow([lat, long, temp, humi, oxyg, cadi, camo, lpg])
 
         #Send data to web GUI
         socketio.emit('newdata', {'temp':temp, 'humi':humi,
                                   'oxyg':oxyg, 'cadi':cadi,
                                   'camo':camo, 'lpg' :lpg}, namespace='/test')
-        socketio.sleep(2)
+        socketio.sleep(.5)
 ##### END Update Function ##########################################
 
 # Send HTML to web GUI
